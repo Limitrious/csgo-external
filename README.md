@@ -28,8 +28,8 @@ Using this (or any cheat) in online matchmaking / VAC-secured servers will almos
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/YOUR_USERNAME/python-csgo-external.git
-   cd python-csgo-external
+   git clone https://github.com/Limitrious/csgo-external.git
+   cd csgo-external
    ```
 2. Install dependenciesBash
    ```bash
