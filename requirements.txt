@@ -1,0 +1,8 @@
+pymem>=1.2.0
+glfw>=2.7.0
+imgui[glfw]>=2.0.0
+PyOpenGL>=3.1.7
+pynput>=1.7.7
+keyboard>=0.13.5
+mouse>=0.7.1
+requests>=2.28.0
