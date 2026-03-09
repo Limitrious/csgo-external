@@ -39,3 +39,7 @@ Using this (or any cheat) in online matchmaking / VAC-secured servers will almos
    ```bash
    python main.py
    ```
+
+## TODO
+
+- Auto bhop being too perfect, easy to detect
