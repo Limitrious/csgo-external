@@ -20,7 +20,8 @@ Using this (or any cheat) in online matchmaking / VAC-secured servers will almos
 ## Requirements
 
 - **Windows** 10 / 11 (64-bit recommended)
-- **Python** 3.9 – 3.11 (3.10 or 3.11 preferred)
+- [**CS:GO**](https://store.steampowered.com/app/4465480/CounterStrikeGlobal_Offensive)
+- **Python** [3.11](https://www.python.org/downloads/release/python-3119/)
 - Administrator rights (pymem needs it for memory reading/writing)
 
 ## Installation
