@@ -43,3 +43,4 @@ Using this (or any cheat) in online matchmaking / VAC-secured servers will almos
 ## TODO
 
 - Auto bhop being too perfect, easy to detect
+- Auto strafe being inconsistence
