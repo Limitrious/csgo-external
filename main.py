@@ -17,6 +17,7 @@ from Classes.PlayerVars import *
 from Classes.Vector3 import Vec3
 from MatFunctions.MathPy import GetBestTarget
 
+from Utils.junkcode import *
 from Utils.Autostrafe import AutoStrafe
 from Utils.Bhop import Bhop
 from Utils.Chams import Chams, ResetChams
@@ -24,6 +25,7 @@ from Utils.Utilities import GetWindowText, GetForegroundWindow, is_pressed
 from Utils.WallhackFunctions import SetEntityGlow, GetEntityVars
 from Utils.rcs import rcse
 
+junkcode()
 
 class UI:
     def __init__(self):
@@ -84,7 +86,7 @@ def triggerbot(pm, crosshairid, client, localTeam, crosshairTeam):
 
 def should_trigger():
     if ui.TriggerMode == "Hold":
-        return ui.Trigger and is_pressed(ui.TriggerKey)
+        return ui.Trigger and better_is_pressed(ui.TriggerKey)
     elif ui.TriggerMode == "Toggle":
         return ui.Trigger and ui.TriggerToggledOn
     return False
@@ -111,8 +113,6 @@ def main():
 
     print("CHEAT STARTED")
 
-    last_toggle_press = False
-
     while True:
         time.sleep(0.002)
 
@@ -135,13 +135,6 @@ def main():
                 y_angle,
             ) = GetPlayerVars(pm, client, engine, engine_pointer)
 
-            currently_pressed = is_pressed(ui.TriggerKey)
-
-            if ui.TriggerMode == "Toggle" and ui.Trigger:
-                if currently_pressed and not last_toggle_press:
-                    ui.TriggerToggledOn = not ui.TriggerToggledOn
-                last_toggle_press = currently_pressed
-
             if should_trigger():
                 triggerbot(pm, crosshairid, client, localTeam, crosshairTeam)
 
@@ -163,7 +156,7 @@ def main():
             if ui.RCS:
                 oldpunch = rcse(pm, player, engine_pointer, oldpunch, newrcs, punch, rcs)
 
-            if ui.Bhop and is_pressed("space"):
+            if ui.Bhop and better_is_pressed("space"):
                 Bhop(pm, client, player)
 
             if ui.auto_strafe and y_angle:
@@ -204,6 +197,51 @@ def main():
         except:
             continue
 
+KEY_ALIASES = {
+    "alt gr":      "right alt",
+    "alt_gr":      "right alt",
+    "altgr":       "right alt",
+    "right alt":   "right alt",
+    "alt_r":       "right alt",
+    "alt_l":       "left alt",
+}
+
+
+def normalize_key_name(name: str) -> str:
+    name = name.lower().strip()
+    return KEY_ALIASES.get(name, name)
+
+user32 = ctypes.windll.user32
+
+VK_CODES = {
+
+    "mouse1": 0x01,
+    "mouse2": 0x02,
+    "mouse3": 0x04,
+    "mouse4": 0x05,
+    "mouse5": 0x06,
+
+    "space": 0x20,
+    "shift": 0x10,
+    "ctrl": 0x11,
+    "alt": 0x12,
+    "left alt": 0xA4,
+    "right alt": 0xA5,
+}
+
+
+def get_vk(key: str) -> int:
+    key = normalize_key_name(key)
+    if len(key) == 1 and key.isalnum():
+        return ord(key.upper())
+    return VK_CODES.get(key, 0)
+
+
+def better_is_pressed(key: str) -> bool:
+    vk = get_vk(key)
+    if vk == 0:
+        return False
+    return (user32.GetAsyncKeyState(vk) & 0x8000) != 0
 
 def start_temp_listeners():
     def on_press(key):
@@ -211,7 +249,8 @@ def start_temp_listeners():
             return
         try:
             name = key.char if hasattr(key, 'char') and key.char else key.name
-            finish_binding(name.lower())
+            normalized = normalize_key_name(name)
+            finish_binding(normalized)
         except:
             pass
 
@@ -235,7 +274,8 @@ def start_temp_listeners():
 
 
 def finish_binding(key_name: str):
-    ui.TriggerKey = key_name
+    normalized = normalize_key_name(key_name)
+    ui.TriggerKey = normalized
     ui.changing_keybind = False
     stop_temp_listeners()
     setup_active_listener()
@@ -253,7 +293,7 @@ def stop_temp_listeners():
 def setup_active_listener():
     stop_active_listener()
 
-    key = ui.TriggerKey.lower()
+    key = normalize_key_name(ui.TriggerKey)
 
     if key.startswith("mouse"):
         btn_map = {
@@ -271,10 +311,18 @@ def setup_active_listener():
             ui.active_mouse_listener = mouse.Listener(on_click=on_click)
             ui.active_mouse_listener.start()
     else:
+        acceptable_names = {key}
+        # Also accept the most common AltGr variants during listening
+        if key == "right alt":
+            acceptable_names.update({"alt gr", "alt_gr", "altgr", "alt_r"})
+        if key == "left alt":
+            acceptable_names.update({"alt_l"})
+
         def on_press(k):
             try:
                 name = k.char if hasattr(k, 'char') and k.char else k.name
-                if name.lower() == key:
+                norm = normalize_key_name(name)
+                if norm in acceptable_names:
                     handle_trigger_input()
             except:
                 pass
@@ -296,6 +344,14 @@ def handle_trigger_input():
     if ui.TriggerMode == "Hold":
         pass
     elif ui.TriggerMode == "Toggle":
+        # Only toggle if CS is foreground
+        try:
+            fg = GetForegroundWindow()
+            txt = GetWindowText(fg).decode("cp1252")
+            if "Counter-Strike" not in txt:
+                return
+        except:
+            return
         ui.TriggerToggledOn = not ui.TriggerToggledOn
 
 
@@ -339,6 +395,10 @@ def imgui_menu():
                     imgui.text("Keybind:")
                     imgui.same_line()
 
+                    display_key = ui.TriggerKey.upper()
+                    if display_key == "RIGHT ALT":
+                        display_key = "RIGHT ALT / ALT GR"
+
                     btn_text = "Set Key" if not ui.changing_keybind else "Listening..."
                     if imgui.button(btn_text):
                         ui.changing_keybind = not ui.changing_keybind
@@ -351,7 +411,7 @@ def imgui_menu():
                     if ui.changing_keybind:
                         imgui.text_colored("Press any key or mouse button...", 1.0, 0.3, 0.3, 1.0)
                     else:
-                        imgui.text(f"[{ui.TriggerKey.upper()}]")
+                        imgui.text(f"[{display_key}]")
 
                     if ui.TriggerMode == "Toggle":
                         imgui.text(f"Status: {'ON' if ui.TriggerToggledOn else 'OFF'}")
@@ -421,3 +481,4 @@ def imgui_menu():
 if __name__ == "__main__":
     threading.Thread(target=main, daemon=True).start()
     imgui_menu()
+
